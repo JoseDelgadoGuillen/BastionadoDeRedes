@@ -1,0 +1,40 @@
+#!/bin/bash
+
+source $DIR_WAN/wan.conf
+
+######################################################################
+###  Iniciar
+######################################################################
+fnc_enrutar_iniciar() {
+	#echo fnc_enrutar_iniciar
+	
+	RESULTAT=$($DIR_ENRUTAR/enrutar estat | head -n 1)
+	
+	if [ "$RESULTAT" = "$ACTIVAT" ]; then
+		echo "Ja esta $ACTIVAT"
+		exit
+	fi
+
+	ip a a 10.0.0.1/24 dev enp1s0f3
+	ip l s dev enp1s0f3 up
+	sysctl -w net.ipv4.ip_forward=1
+	iptables -t nat -A POSTROUTING -o $WAN_INT -j MASQUERADE
+
+}
+
+######################################################################
+###  Aturar
+######################################################################
+fnc_enrutar_aturar() {
+	#echo fnc_enrutar_aturar
+	
+	if [ "$RESULTAT" = "$DESACTIVAT" ]; then
+		echo "Ja esta $DESACTIVAT"
+		exit
+	fi
+	
+	iptables -t nat -D POSTROUTING -o $WAN_INT -j MASQUERADE
+	sysctl -w net.ipv4.ip_forward=0
+	ip a d 10.0.0.1/24 dev enp1s0f3
+	ip l s dev enp1s0f3 down
+}
